@@ -1,0 +1,263 @@
+---
+title: 'Peer-graded Assignment: Regression Models Course Project'
+author: "Thiago Augusto Cardoso"
+date: "December 23, 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Executive Summary
+
+This work intend to find evidence to respond to two questions
+
+    “Is an automatic or manual transmission better for MPG”
+    "Quantify the MPG difference between automatic and manual transmissions" 
+
+Therefore it will start by looking at the data and finding sufficiente evidence to respond the questions above.
+
+## 1. Load the Dataset and summary statistics
+
+Loading the dataset and checking for basic statistics which are found in Apendix I
+
+```{r loaddata, cache=TRUE}
+data<-mtcars
+str(data)
+```
+
+## 2. Exploratory Data Analysis
+
+For further understanding of the data let's start checking the variables. So in Apendix I we have figures from the data which support the following: 
+
+* manual cars tend to be more economical while having less cylinders 
+* manual cars tend to have less weigth than automatic and lighter cars, mean less fuel consumption.
+* manual cars have lower displacement and the lower displacement the more economical is the vehicle.
+* manual cars have lower horsepower and that the lower horsepower the more economical is the vehicle.
+* automatic cars have lower rear axle ratio and that the higher the rear axle ratio the more economical is the vehicle.
+* manual cars are faster in the quarter mile, and the slower the car in the quarter mile, the more economical it is
+
+To see actual other relations, let's check the correlation between the variables
+```{r expcor, echo=FALSE,cache=TRUE}
+cor<-cor(data)[,1]
+dcor<-as.data.frame(cor)
+dcor$names<-row.names(dcor)
+dcor
+```
+
+To see which factor might be significant, let's create a linear model with all variables, to see if we can knock any variable out
+
+```{r explm,warning=FALSE,echo=FALSE}
+fit<-lm(mpg~.,data)
+adjustedrsquarefit<-summary(lm(mpg~.,data))$adj.r.squared
+pvalues<-summary(fit)$coefficients[,4][-1]
+dpvalues<-as.data.frame(pvalues)
+dpvalues$names<-row.names(dpvalues)
+library(dplyr)
+tdpvalues<-tbl_df(dpvalues)
+tdcor<-tbl_df(dcor)
+corvspvalue<-inner_join(tdpvalues,tdcor,by="names")
+corvspvalue<-corvspvalue[,c(2,1,3)]
+corvspvalue
+```
+The actual table shows that both weight and the type of transmission are the most significant in mpg. Now let's try models that consider both variables, but lets start knocking the least significant variables, without losing explanatory power according to adjust r squared, in this case cylinders. 
+
+```{r explm1, echo=FALSE}
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+disp+hp+drat+qsec+vs+gear+carb ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+disp+hp+drat+qsec+vs+gear+carb ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+adjustedrsquare<-summary(lm(mpg~wt+am+disp+hp+drat+qsec+vs+gear+carb ,data))$adj.r.squared
+adjustedrsquarefit<adjustedrsquare
+```
+
+Since the adjusted r squared from the original model (all variables) is less than the model above we continue to knock down variables. 
+
+Now knocking the least significant, in this case V/S
+
+```{r explm2, echo=FALSE}
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+disp+hp+drat+qsec+gear+carb ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+disp+hp+drat+qsec+gear+carb ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+adjustedrsquare1<-summary(lm(mpg~wt+am+disp+hp+drat+qsec+gear+carb ,data))$adj.r.squared
+adjustedrsquare<adjustedrsquare1
+
+```
+Since the new model has a better adusted r-squared we continue to knock down variables.
+Now knocking the least significant, in this case carb
+```{r explm3,echo=FALSE}
+
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+disp+hp+drat+qsec+gear ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+disp+hp+drat+qsec+gear ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+adjustedrsquare2<-summary(lm(mpg~wt+am+disp+hp+drat+qsec+gear ,data))$adj.r.squared
+adjustedrsquare1<adjustedrsquare2
+
+```
+Now knocking the least significant, in this case gear
+
+```{r explm4,echo=FALSE}
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+disp+hp+drat+qsec ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+disp+hp+drat+qsec ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+adjustedrsquare3<-summary(lm(mpg~wt+am+disp+hp+drat+qsec ,data))$adj.r.squared
+adjustedrsquare2<adjustedrsquare3
+
+```
+Now knocking the least significant, in this case drat
+```{r explm5,echo=FALSE}
+
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+disp+hp+qsec ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+disp+hp+qsec ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+adjustedrsquare4<-summary(lm(mpg~wt+am+disp+hp+qsec ,data))$adj.r.squared
+adjustedrsquare3<adjustedrsquare4
+
+
+```
+
+Now knocking the least significant, in this case disp
+```{r explm6,echo=FALSE}
+
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+hp+qsec ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+hp+qsec ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+
+adjustedrsquare5<-summary(lm(mpg~wt+am+hp+qsec ,data))$adj.r.squared
+adjustedrsquare4<adjustedrsquare5
+
+```
+Now knocking the least significant, in this case hp
+```{r explm7,echo=FALSE}
+
+
+knockdownpvalue<-max(summary(lm(mpg~wt+am+qsec ,data))$coefficients[,4])
+dfmodel<-as.data.frame(summary(lm(mpg~wt+am+qsec ,data))$coefficients[,4])
+dfmodel$names<-row.names(dfmodel)
+positionknockdown<-which(dfmodel==knockdownpvalue)
+dfmodel$names[positionknockdown]
+
+adjustedrsquare6<-summary(lm(mpg~wt+am+qsec ,data))$adj.r.squared
+adjustedrsquare5<adjustedrsquare6
+
+```
+
+## 3. Model used 
+```{ r model}
+fit<-lm(mpg~wt+am+qsec ,data)
+```
+
+This last model, every variable is significant and there is no loss of explanatory power according to the adjusted r squared. That seems logical since the quarter mile is correlated with cylinders, displacement and all the other dropped variables.
+
+## 4. Is an automatic or manual transmission better for MPG?
+
+According to the model tested, a manual transmission implies a better mpg
+
+## 5. Quantify the MPG difference between automatic and manual transmissions
+
+According to the model tested, ceteris paribus, a manual transmission implies an average of 2.94 mpg more of economy, in comparisson with the automatic. 
+
+## 6. Residual plots
+
+The residual plots are show in Apendix II 
+
+
+Observing the residuals, it seems reasonable that the residuals are normal.
+
+## 7. Apendix I - Graphing the data
+
+
+```{r graphs, echo=FALSE, cache=TRUE}
+library(ggplot2)
+library(gridExtra)
+par(mfrow=c(2,2))
+g1<-ggplot(data,aes(mpg,am))+geom_point(aes(color=cyl)) +ggtitle('Number of Cylinders')+ylab('Aut=0, Man=1')
+
+g2<-ggplot(data,aes(mpg,am))+geom_point(aes(color=wt)) +ggtitle('Weigth')+ylab('Aut=0, Man=1')
+
+g3<-ggplot(data,aes(mpg,am))+geom_point(aes(color=disp)) +ggtitle('Displacement')+ylab('Aut=0, Man=1')
+
+g4<-ggplot(data,aes(mpg,am))+geom_point(aes(color=hp)) +ggtitle('Horsepower')+ylab('Aut=0, Man=1')
+
+g5<-ggplot(data,aes(mpg,am))+geom_point(aes(color=drat)) +ggtitle('Rear axle ratio')+ylab('Aut=0, Man=1')
+
+g6<-ggplot(data,aes(mpg,am))+geom_point(aes(color=qsec)) +ggtitle('Quarter mile time')+ylab('Aut=0, Man=1')
+
+### thanks to the site http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/ which provided the code below
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+multiplot(g1,g2,g3,g4,g5,g6,cols=2)
+
+```
+
+## 8. Apendix II - Residuals from the model
+
+```{r resid}
+library(broom)
+library(ggplot2)
+fit<-lm(mpg~wt+am+qsec ,data)
+fitf <- fortify(fit)
+g<-ggplot(fitf, aes(x = .fitted, y = .resid)) + geom_point()+geom_smooth()+labs(title='Fitted vs Residual Plot')
+g
+```
